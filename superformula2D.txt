@@ -1,0 +1,66 @@
+// xs_begin
+// author : @AndyPolygon
+// arg : { var = 'scale' name = 'scale' value = '1' range = '.1 2' step = '.1' precision = '1' }
+// arg : { var = 'm'	name = 'm' value = '8' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 'n1'	name = 'n1' value = '1' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 'n2'	name = 'n2' value = '1' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 'n3'	name = 'n3' value = '1' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 'ab'	name = 'ab' value = '0' range = '-1 1' step = '.1' precision = '2' }
+// arg : { var = 'extrude' name = 'extrude' value = '1' range = '0 2' step = '1' precision = '0' }
+// arg : { var = 'seed' name = 'clr seed' value = '1' range = '0 65535' step = '1' precision = '0' }
+// This is the standard superformula with extrude options (0 = none, 1 = extrude, 2 = extrude to peak)
+// colors are picked randomly from any selected - 'seed' will change the distribution
+// xs_end
+
+//===== built-in args =====
+// uniform vec3		i_volume_size;		// volume size [1-256]
+// uniform float	i_color_index;		// current color index [0-255]
+// uniform int		i_num_color_sels;	// number of color selections [1-255]
+
+//===== built-in functions ===== 
+// float voxel( vec3 v );				// get voxel color index
+// float color_sel( float k );			// get kth selected color index
+// vec4 palette( float index );			// get palette color
+
+float random(vec3 co, float seed)
+{
+    return fract(sin(dot(co,vec3(324.56422, 92.34752, 39.8465782))) * (2937.472+ seed));
+}
+
+float SuperFormula(float phi, float a, float b, float m, float n1, float n2, float n3)
+{
+	return pow((pow(abs(cos(m*phi/4.0)/a),n2) + pow(abs(sin(m*phi/4.0)/b), n3)), -1.0/n1);
+}
+float SuperShape(vec3 p)
+{
+	//do a & b as controlled by slider values from -1 to +1 (0 default)
+	float a = 1.0, b = 1.0;
+	if (ab < 0) b = 1.0 + ab;
+	else a = 1.0 - ab;
+
+	p/=length(p);
+	float phi=atan(p.y,p.x);
+	return SuperFormula(phi,a,b,m,n1,n2,n3);
+}
+
+float map( vec3 v ) 
+{
+	if (extrude == 0 && v.z > 1) return 0;
+	vec3 v1 = v;
+	v.z = i_volume_size.z * 0.5;
+	v = ( v - i_volume_size * 0.5 ) / ( i_volume_size * 0.5 );
+	v = vec3(v.x/scale,v.y/scale,v.z);
+	float ss = SuperShape(v), len = length(v);
+	if (len > ss) return 0;
+	
+	if (extrude == 2)
+	{
+		float height = 1 + (sqrt(ss - len)*i_volume_size.z*scale);
+		if (v1.z > height) return 0;
+	}
+	
+	return color_sel( i_num_color_sels * random(v1,seed));//random color from any selected
+}
+
+
+

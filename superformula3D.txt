@@ -1,0 +1,71 @@
+// xs_begin
+// author : @AndyPolygon
+// arg : { var = 'scalexy' name = 'scale xy' value = '1' range = '.1 2' step = '.1' precision = '1' }
+// arg : { var = 'scalez' name = 'scale z' value = '1' range = '.1 2' step = '.1' precision = '1' }
+// arg : { var = 's1m'	name = 's1m' value = '8' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 's1n1'	name = 's1n1' value = '1' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 's1n2'	name = 's1n2' value = '1' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 's1n3'	name = 's1n3' value = '1' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 'ab1'	name = 'ab1' value = '0' range = '-1 1' step = '.1' precision = '2' }
+// arg : { var = 's2m'	name = 's2m' value = '8' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 's2n1'	name = 's2n1' value = '1' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 's2n2'	name = 's2n2' value = '1' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 's2n3'	name = 's2n3' value = '1' range = '0 30' step = '.1' precision = '1' }
+// arg : { var = 'ab2'	name = 'ab2' value = '0' range = '-1 1' step = '.1' precision = '2' }
+// arg : { var = 'shape' name = 'shape' value = '0' range = '0 2' step = '1' precision = '0' }
+// arg : { var = 'seed' name = 'clr seed' value = '1' range = '0 65535' step = '1' precision = '0' }
+// This is the standard superformula with shape options (0 = normal, 1 = bottom half extruded like a tower, 2 = half-dome - top half only)
+// colors are picked randomly from any selected - 'seed' will change the distribution
+// xs_end
+
+//===== built-in args =====
+// uniform vec3		i_volume_size;		// volume size [1-256]
+// uniform float	i_color_index;		// current color index [0-255]
+// uniform int		i_num_color_sels;	// number of color selections [1-255]
+
+//===== built-in functions ===== 
+// float voxel( vec3 v );				// get voxel color index
+// float color_sel( float k );			// get kth selected color index
+// vec4 palette( float index );			// get palette color
+
+float random(vec3 co, float seed)
+{
+    return fract(sin(dot(co,vec3(324.56422, 92.34752, 39.8465782))) * (2937.472+ seed));
+}
+
+float SuperFormula(float phi, float a, float b, float m, float n1, float n2, float n3)
+{
+	return pow((pow(abs(cos(m*phi/4.0)/a),n2) + pow(abs(sin(m*phi/4.0)/b), n3)), -1.0/n1);
+}
+float SuperShape3D(vec3 p)
+{
+	//do a & b as controlled by slider values from -1 to +1 (0 default)
+	float a1 = 1.0, b1 = 1.0, a2 = 1.0, b2 = 1.0;
+	if (ab1 < 0) b1 = 1.0 + ab1;
+	else a1 = 1.0 - ab1;
+	if (ab2 < 0) b2 = 1.0 + ab2;
+	else a2 = 1.0 - ab2;
+
+	float d=length(p);
+	float sn=p.z/d;
+	float phi=atan(p.y,p.x),rho=asin(sn);
+	float r1=SuperFormula(phi,a1,b1,s1m,s1n1,s1n2,s1n3);
+	float r2=SuperFormula(rho,a2,b2,s2m,s2n1,s2n2,s2n3);
+	//return length(r2*vec3(r1*cos(rho)*vec2(cos(phi),sin(phi)),sin(rho)));
+	return r2*sqrt(r1*r1*(1.0-sn*sn)+sn*sn);//faster?!
+}
+
+float map( vec3 v ) 
+{
+	vec3 v1 = v;
+	v = ( v - i_volume_size * 0.5 ) / ( i_volume_size * 0.5 );
+	v = vec3(v.x/scalexy,v.y/scalexy,v.z/scalez);
+	if (shape == 1 && v.z < 0) v.z = 0;//i_volume_size.z*.5;//extrude middle down like a tower
+	if (shape == 2) v.z = (v.z + 1.0)/2.0;//v.z/2.0)+(i_volume_size.z*0.5);//stretch top half over full height for a dome
+	//v = ( v - i_volume_size * 0.5 ) / ( i_volume_size * 0.5 );
+	if (length(v) > SuperShape3D(v)) return 0;
+	return color_sel( i_num_color_sels * random(v1,seed));//random color from any selected
+}
+
+
+
