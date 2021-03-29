@@ -1,0 +1,77 @@
+// xs_begin
+// author : @AndyPolygon
+// arg : { var = 'size' name = 'size' value = '3' range = '3 33' step = '3' precision = '0' }
+// arg : { var = 'fill' name = 'fill' value = '0' range = '0 2' step = '1' precision = '0' }
+// arg : { var = 'thicker' name = 'thicker' value = '0' range = '0 1' step = '1' precision = '0' }
+// xs_end
+
+//===== built-in args =====
+// uniform vec3		i_volume_size;		// volume size [1-256]
+// uniform float	i_color_index;		// current color index [0-255]
+// uniform int		i_num_color_sels;	// number of color selections [1-255]
+
+//===== built-in functions ===== 
+// float voxel( vec3 v );				// get voxel color index
+// float color_sel( float k );			// get kth selected color index
+// vec4 palette( float index );			// get palette color
+
+int fillv(vec3 v)
+{
+	//size = how often verticals appear (size-1 gap between them)
+	//if thicker == 1 then double thick beams if size > 3
+	//fill = 0 means top isometric layer only, 1 = down to ground, 2 = just solid beams!
+	//select 3 colors for the 3 sets of beams
+	
+	int thick = size > 3 && thicker > 0 ? 1 : 0;
+
+	int fx = mod(v.x,size);
+	int x = v.x/size;
+	int fy = mod(v.y,size);
+	int y = v.y/size;
+	 
+	if (thick > 0)
+	{
+		if (fx == thick) fx = 0;
+		if (fy == thick) fy = 0;
+	}
+	 
+	if (fx > 0 && fy > 0) return 0;
+
+	int z = v.z;
+	
+	int height = ((x+y)*size);
+
+	if (fx == 0 && fy == 0)
+	{
+		if (fill == 2) return 1;
+		if (fill == 1) return z <= height+thick ? 1 : 0; 
+		float min = height - size;
+		return (z <= height+thick && z >= min) ? 1 : 0;
+	}
+	
+	if (fill == 0)
+		return (z == height || z == height + thick) ? 1 : 0;
+
+	if (fill == 1 && z > height+thick) return 0;
+	
+	int fz = mod(v.z,size); if (fz == thick) fz = 0;
+	return fz == 0;
+}
+
+float map( vec3 v ) 
+{
+	int s3 = size/3;
+	
+	int c1 = fillv(v); 
+	if (c1 == 1) return color_sel(0);
+	
+	int c2 = fillv(v + vec3(s3,s3,s3*2)); 
+	if (c2 == 1) return color_sel(i_num_color_sels/2);
+	
+	int c3 = fillv(v + vec3(s3+s3,s3+s3,s3*4));
+	if (c3 == 1) return color_sel(i_num_color_sels);		
+	
+	return 0;
+}
+
+

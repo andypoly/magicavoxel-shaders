@@ -1,0 +1,189 @@
+
+// xs_begin
+// author : @AndyPolygon
+// arg : { var = 'hscale' name = 'height' value = '.4' range = '.1 1' step = '.05' precision = '2' }
+// arg : { var = 'scale' name = 'scale' value = '1' range = '.1 2' step = '.1' precision = '1' }
+// arg : { var = 'type' name = 'type' value = '0' range = '0 3 ' step = '1' precision = '0' }
+// arg : { var = 'octaves' name = 'octaves' value = '5' range = '1 5' step = '1' precision = '0' }
+// arg : { var = 'roughness' name = 'roughness' value = '.5' range = '.1 .9' step = '.1' precision = '2' }
+// arg : { var = 'distort' name = 'distort' value = '0' range = '0 1' step = '1' precision = '0' }
+// arg : { var = 'steps' name = 'steps' value = '0' range = '0 10' step = '1' precision = '0' }
+// arg : { var = 'random' name = 'random' value = '0' range = '0 5000' step = '10' precision = '0' }
+// arg : { var = 'waterz' name = 'water z' value = '32' range = '0 255' step = '1' precision = '0' }
+// arg : { var = 'waterCol' name = 'water col' value = '0' range = '0 255' step = '1' precision = '0' }
+// arg : { var = 'colBlend' name = 'col blend' value = '0.6' range = '0 1' step = '.1' precision = '1' }
+// arg : { var = 'xOffset' name = 'xOffset' value = '0' range = '-1024 1024' step = '1' precision = '0' }
+// arg : { var = 'yOffset' name = 'yOffset' value = '0' range = '-1024 1024' step = '1' precision = '0' }
+// xs_end
+
+//===== built-in args =====
+// uniform vec3		i_volume_size;		// volume size [1-256]
+// uniform float	i_color_index;		// current color index [0-255]
+// uniform int		i_num_color_sels;	// number of color selections [1-255]
+
+//===== built-in functions ===== 
+// float voxel( vec3 v );				// get voxel color index
+// float color_sel( float k );			// get kth selected color index
+// vec4 palette( float index );			// get palette color
+
+
+//landscape using simplex noise and fbm
+
+
+// noise2d code from https://github.com/ashima/webgl-noise/blob/master/src/noise2D.glsl
+//
+// Description : Array and textureless GLSL 2D simplex noise function.
+//      Author : Ian McEwan, Ashima Arts.
+//  Maintainer : stegu
+//     Lastmod : 20110822 (ijm)
+//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.
+//               Distributed under the MIT License. See LICENSE file.
+//               https://github.com/ashima/webgl-noise
+//               https://github.com/stegu/webgl-noise
+// 
+
+vec3 mod289(vec3 x) {
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec2 mod289(vec2 x) {
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec3 permute(vec3 x) {
+  return mod289(((x*34.0)+1.0)*x);
+}
+
+float snoise(vec2 v)
+{
+	const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
+                      0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
+                     -0.577350269189626,  // -1.0 + 2.0 * C.x
+                      0.024390243902439); // 1.0 / 41.0
+	// First corner
+	vec2 i  = floor(v + dot(v, C.yy) );
+	vec2 x0 = v -   i + dot(i, C.xx);
+
+	// Other corners
+	vec2 i1;
+	//i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
+	//i1.y = 1.0 - i1.x;
+	i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+	// x0 = x0 - 0.0 + 0.0 * C.xx ;
+	// x1 = x0 - i1 + 1.0 * C.xx ;
+	// x2 = x0 - 1.0 + 2.0 * C.xx ;
+	vec4 x12 = x0.xyxy + C.xxzz;
+	x12.xy -= i1;
+
+	// Permutations
+	i = mod289(i); // Avoid truncation effects in permutation
+	vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+		+ i.x + vec3(0.0, i1.x, 1.0 ));
+
+	vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+	m = m*m ;
+	m = m*m ;
+
+	// Gradients: 41 points uniformly over a line, mapped onto a diamond.
+	// The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
+
+	vec3 x = 2.0 * fract(p * C.www) - 1.0;
+	vec3 h = abs(x) - 0.5;
+	vec3 ox = floor(x + 0.5);
+	vec3 a0 = x - ox;
+
+	// Normalise gradients implicitly by scaling m
+	// Approximation of: m *= inversesqrt( a0*a0 + h*h );
+	m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+
+	// Compute final noise value at P
+	vec3 g;
+	g.x  = a0.x  * x0.x  + h.x  * x0.y;
+	g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+	return 130.0 * dot(m, g);
+}
+
+//end noise (c) code
+
+
+
+//combine octaves of noise
+
+float fbm(vec2 x) 
+{
+	float v = 0.0;
+	float a = 0.5;
+	float total = 0;
+	vec2 shift = vec2(100);
+	
+	if (type > 0) x /= 2.0;
+	
+	for (int i = 0; i < octaves; ++i) 
+	{
+		float n = snoise(x);//simplex
+		if (type == 1)		//sharp valleys
+			n = abs(n);
+		else if (type == 2) //sharp ridges
+		{
+			n = 1.0 - abs(n);
+		}
+		else if (type == 3) //very sharp ridges - exponential height
+		{
+			n = 1.0 - abs(n); 
+			n = n*n;
+		}
+		
+		v += a * n;
+		
+		x = x * 2.0 + shift;
+		total += a;
+		a *= roughness;
+	}
+	
+	v /= total;
+	if (type == 0) v = (v+1.0)*.5;
+	return v;
+}
+
+float InOut(float t)
+{
+    if(t <= 0.5)
+        return 2.0 * t * t;
+    t -= 0.5;
+    return 2.0 * t * (1.0f - t) + 0.5;
+}
+
+//main color set
+
+float map( vec3 v ) 
+{
+	float height = i_volume_size.z*hscale;
+
+	if (v.z > height) return 0;
+	
+	float xyScale = max(i_volume_size.x,i_volume_size.y)/scale;
+	vec2 pos = (vec2(v.x+xOffset,v.y+yOffset)/xyScale) + vec2(random*2.234,random*3.345);//rubbish random by offset!
+	
+	if (distort == 1) pos += fbm( pos);
+	
+	float h = fbm( pos );
+
+	float cs = colBlend/(i_num_color_sels*2);
+	float cz = v.z/height;
+	if (waterCol > 0) {float hb = waterz - (height/i_num_color_sels)*.5; cz = max((v.z - hb)/(height-hb),0);}
+	float colgrad = (cz*(1.0-cs))+(snoise(pos*128.0)*cs);
+
+	h *= height;
+
+	if (steps > 0)//slightly stepped terrain
+	{
+		float s = height/(steps+1);
+		int s2 = h/s;
+		float f = (h - (s*s2))/s;
+		h = (s * s2) + (InOut(f)*s);
+	}
+
+	if (waterCol > 0 && v.z >= (int)h && v.z <= waterz) return waterCol;
+
+	return v.z < h ? color_sel((i_num_color_sels+.99)*colgrad) : 0;
+}
