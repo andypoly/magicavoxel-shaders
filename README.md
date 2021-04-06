@@ -1,6 +1,7 @@
 # Magica Voxel shaders
 shaders to use with Magica Voxel https://ephtracy.github.io/
 
+Example images in wiki: https://github.com/andypoly/magicavoxel-shaders/wiki
 
 Landscape shader
 --------------------
