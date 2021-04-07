@@ -7,7 +7,20 @@ Landscape shader
 --------------------
 
 Landscape designer with lots of options including water level  
+This is a heavy shader - may not work on basic gpus (intel)!  
 
+**height:** amount of volume height to fill with tallest peaks  
+**scale:** noise scale  
+**type:** noise type  
+**octaves:** leave as default or try less for smoother terrain or shader failure!  
+**roughness:**  
+**distort:** when set to 1 will distort the landscape  
+**steps:** will add stepped terrain levels  
+**random:** adjust noise seed  
+**water z:** height of water layer  
+**water col:** if > 0 then water will be filled at water z and down with the color specified  
+**col blend:** Select multiple colors to blend them across landscape heights - the blend value is how smoothly/roughly they blend  
+**x/yOffset:** offset for noise  
 
 Superformula shaders
 --------------------
