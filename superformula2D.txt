@@ -22,6 +22,9 @@
 // float color_sel( float k );			// get kth selected color index
 // vec4 palette( float index );			// get palette color
 
+//do not mix int and float without implicit conversion for older gpus!!
+
+
 float random(vec3 co, float seed)
 {
     return fract(sin(dot(co,vec3(324.56422, 92.34752, 39.8465782))) * (2937.472+ seed));
@@ -35,7 +38,7 @@ float SuperShape(vec3 p)
 {
 	//do a & b as controlled by slider values from -1 to +1 (0 default)
 	float a = 1.0, b = 1.0;
-	if (ab < 0) b = 1.0 + ab;
+	if (ab < 0.0) b = 1.0 + ab;
 	else a = 1.0 - ab;
 
 	p/=length(p);
@@ -45,21 +48,21 @@ float SuperShape(vec3 p)
 
 float map( vec3 v ) 
 {
-	if (extrude == 0 && v.z > 1) return 0;
+	if (extrude == 0.0 && v.z > 1.0) return 0.0;
 	vec3 v1 = v;
 	v.z = i_volume_size.z * 0.5;
 	v = ( v - i_volume_size * 0.5 ) / ( i_volume_size * 0.5 );
 	v = vec3(v.x/scale,v.y/scale,v.z);
 	float ss = SuperShape(v), len = length(v);
-	if (len > ss) return 0;
+	if (len > ss) return 0.0;
 	
-	if (extrude == 2)
+	if (extrude == 2.0)
 	{
-		float height = 1 + (sqrt(ss - len)*i_volume_size.z*scale);
-		if (v1.z > height) return 0;
+		float height = 1.0 + (sqrt(ss - len)*i_volume_size.z*scale);
+		if (v1.z > height) return 0.0;
 	}
 	
-	return color_sel( i_num_color_sels * random(v1,seed));//random color from any selected
+	return color_sel( float(i_num_color_sels) * random(v1,seed));//random color from any selected
 }
 
 

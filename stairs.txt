@@ -1,0 +1,35 @@
+// xs_begin
+// author : @AndyPolygon
+// arg : { var = 'height' name = 'step height' value = '1' range = '1 8' step = '1' precision = '0' }
+// arg : { var = 'depth' name = 'step depth' value = '1' range = '1 8' step = '1' precision = '0' }
+// arg : { var = 'dir' name = 'dir' value = '0' range = '0 3' step = '1' precision = '0' }
+// xs_end
+
+//===== built-in args =====
+// uniform vec3		i_volume_size;		// volume size [1-256]
+// uniform float	i_color_index;		// current color index [0-255]
+// uniform int		i_num_color_sels;	// number of color selections [1-255]
+
+//===== built-in functions ===== 
+// float voxel( vec3 v );				// get voxel color index
+// float color_sel( float k );			// get kth selected color index
+// vec4 palette( float index );			// get palette color
+
+//do not mix int and float without implicit conversion for older gpus!!
+
+
+//minimalist stairs shader!
+float map( vec3 v ) 
+{
+	float z = v.x;
+	if (dir == 1.0) z = v.y;
+	else if (dir == 2.0) z = (i_volume_size.x - .5) - v.x;
+	else if (dir == 3.0) z = (i_volume_size.y - .5) - v.y;
+
+	z /= depth;
+	z *= height; 
+	z += height;
+	return v.z < z ? i_color_index : 0.0;
+}
+
+

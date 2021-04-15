@@ -28,6 +28,9 @@
 // float color_sel( float k );			// get kth selected color index
 // vec4 palette( float index );			// get palette color
 
+//do not mix int and float without implicit conversion for older gpus!!
+
+
 float random(vec3 co, float seed)
 {
     return fract(sin(dot(co,vec3(324.56422, 92.34752, 39.8465782))) * (2937.472+ seed));
@@ -41,9 +44,9 @@ float SuperShape3D(vec3 p)
 {
 	//do a & b as controlled by slider values from -1 to +1 (0 default)
 	float a1 = 1.0, b1 = 1.0, a2 = 1.0, b2 = 1.0;
-	if (ab1 < 0) b1 = 1.0 + ab1;
+	if (ab1 < 0.0) b1 = 1.0 + ab1;
 	else a1 = 1.0 - ab1;
-	if (ab2 < 0) b2 = 1.0 + ab2;
+	if (ab2 < 0.0) b2 = 1.0 + ab2;
 	else a2 = 1.0 - ab2;
 
 	float d=length(p);
@@ -60,11 +63,11 @@ float map( vec3 v )
 	vec3 v1 = v;
 	v = ( v - i_volume_size * 0.5 ) / ( i_volume_size * 0.5 );
 	v = vec3(v.x/scalexy,v.y/scalexy,v.z/scalez);
-	if (shape == 1 && v.z < 0) v.z = 0;//i_volume_size.z*.5;//extrude middle down like a tower
-	if (shape == 2) v.z = (v.z + 1.0)/2.0;//v.z/2.0)+(i_volume_size.z*0.5);//stretch top half over full height for a dome
+	if (shape == 1.0 && v.z < 0.0) v.z = 0.0;//i_volume_size.z*.5;//extrude middle down like a tower
+	if (shape == 2.0) v.z = (v.z + 1.0)/2.0;//v.z/2.0)+(i_volume_size.z*0.5);//stretch top half over full height for a dome
 	//v = ( v - i_volume_size * 0.5 ) / ( i_volume_size * 0.5 );
-	if (length(v) > SuperShape3D(v)) return 0;
-	return color_sel( i_num_color_sels * random(v1,seed));//random color from any selected
+	if (length(v) > SuperShape3D(v)) return 0.0;
+	return color_sel( float(i_num_color_sels) * random(v1,seed));//random color from any selected
 }
 
 

@@ -7,7 +7,8 @@ Landscape shader
 --------------------
 
 Landscape designer with lots of options including water level  
-This is a heavy shader - may not work on basic gpus (intel)!  
+This is a heavy shader
+Select multiple colors in the palette to shade the landscape by height 
 
 **height:** amount of volume height to fill with tallest peaks  
 **scale:** noise scale  
@@ -19,7 +20,7 @@ This is a heavy shader - may not work on basic gpus (intel)!
 **random:** adjust noise seed  
 **water z:** height of water layer  
 **water col:** if > 0 then water will be filled at water z and down with the color specified  
-**col blend:** Select multiple colors to blend them across landscape heights - the blend value is how smoothly/roughly they blend  
+**col blend:** when multiple colors selected, the blend value is how roughly they blend  
 **x/yOffset:** offset for noise  
 
 Superformula shaders
@@ -38,3 +39,12 @@ cone                |0   |1   |1   |1   |4   |1   |1   |1   |2
 splash/explosion    |12  |.6  |1   |1   |16  |.5  |.5  |.5  |2/0  
 cactus (scale .6,.9)|8   |4   |4   |6   |2   |1   |1   |4   |0 or 2 	  			
 
+Stairs
+------
+  
+Simple stairs in one of four directions  
+  
+Isoweave
+--------
+  
+Pattern thing!  
