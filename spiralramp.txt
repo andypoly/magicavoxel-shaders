@@ -1,0 +1,80 @@
+// xs_begin
+// author : @AndyPolygon
+// arg : { var = 'turns' name = 'turns' value = '4' range = '1 16' step = '1' precision = '0' }
+// arg : { var = 'square' name = 'square' value = '0' range = '0 1' step = '.1' precision = '2' }
+// xs_end
+
+//===== built-in args =====
+// uniform vec3		i_volume_size;		// volume size [1-256]
+// uniform float	i_color_index;		// current color index [0-255]
+// uniform int		i_num_color_sels;	// number of color selections [1-255]
+
+//===== built-in functions ===== 
+// float voxel( vec3 v );				// get voxel color index
+// float color_sel( float k );			// get kth selected color index
+// vec4 palette( float index );			// get palette color
+
+//do not mix int and float without implicit conversion for older gpus!!
+
+//spiral ramp with number of turns (360 loops) on way up. Make it more square with square value
+//select a range of colors to color blend as it rises up
+
+float random(vec3 co, float seed)
+{
+    return -1.0 + 2.0 * fract(sin(dot(co,vec3(324.56422, 92.34752, 39.8465782))) * (2937.472+ seed));
+}
+
+#define PI 3.1415926538
+
+float map( vec3 v ) 
+{
+	vec3 v1 = v;
+
+	//get position as offset from middle in -1 to +1 range on xy, unchanged on z
+	v -= vec3(i_volume_size.x/2.0, i_volume_size.y/2.0, 0.0);
+	v.xy /= i_volume_size.xy/2.0;
+	
+	float len = length(v.xy);
+
+	float angle = -atan(v.y,-v.x);
+	float rad = (angle + PI)/(2.0*PI);//turn from 0-1.0
+	float angleh = (1.0-rad);//opposite for height by turn
+	
+	if (square > 0.0)
+	{
+		float len2 = max(abs(v.x), abs(v.y));
+		len = (len * (1.0-square))+(len2*square);
+	}
+	
+	float step = 1.0/(turns+2.0);
+	
+	float h = 0.0;
+	
+	float r2 = 1.0-step;
+	float rad2;
+	float turnHeight = i_volume_size.z/turns;
+	float baseh = 0.5;
+	
+	int count = int(turns);
+	for(int i = 0; i < count; i++)
+	{
+		rad2 = (rad*step)+r2;
+
+		if (len < rad2) h = (angleh*turnHeight)+baseh;
+		
+		baseh += turnHeight;
+		r2 -= step;
+	}
+	
+	//top
+	rad2 = (rad*step)+r2;
+	if (len < rad2) h = baseh;
+	
+	if (v.z > h) return 0.0;
+	
+	float cols = float(i_num_color_sels)-.5;
+
+	return color_sel( cols*((h/i_volume_size.z)+(random(v1,5.0)/cols) ) );
+}
+
+
