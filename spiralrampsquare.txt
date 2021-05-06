@@ -1,0 +1,110 @@
+// xs_begin
+// author : @AndyPolygon
+// arg : { var = 'turns' name = 'turns' value = '4' range = '1 6' step = '1' precision = '0' }
+// xs_end
+
+//===== built-in args =====
+// uniform vec3		i_volume_size;		// volume size [1-256]
+// uniform float	i_color_index;		// current color index [0-255]
+// uniform int		i_num_color_sels;	// number of color selections [1-255]
+
+//===== built-in functions ===== 
+// float voxel( vec3 v );				// get voxel color index
+// float color_sel( float k );			// get kth selected color index
+// vec4 palette( float index );			// get palette color
+
+//do not mix int and float without implicit conversion for older gpus!!
+
+//square/spiral tower ramp with number of turns (360 loops) on way up.
+//if multiple colors selected then random will be chosen for each voxel
+
+
+float random(vec3 co, float seed)
+{
+    return fract(sin(dot(co,vec3(324.56422, 92.34752, 39.8465782))) * (2937.472+ seed));
+}
+
+//walk around spiral until found sq we on!!
+float getHeight(int sqx, int sqy, int sqs, float hchange)
+{
+	int turnsi = int(turns);
+	float h = 0.0;
+	int x = 0, y = -1, length = sqs-1;
+	for(int i = 0; i < turnsi; i++)
+	{
+		//forward
+		for(int s = 0; s < length; s++)
+		{
+			y++;
+			h += hchange;
+			if (x == sqx && y == sqy) return h;
+		}
+		//corner
+		y++;
+		h += hchange;
+		if (x == sqx && y == sqy) return h;
+		//right
+		length--;
+		for(int s = 0; s < length; s++)
+		{
+			x++;
+			h += hchange;
+			if (x == sqx && y == sqy) return h;
+		}
+		//corner
+		x++;
+		h += hchange;
+		if (x == sqx && y == sqy) return h;
+		//down
+		for(int s = 0; s < length; s++)
+		{
+			y--;
+			h += hchange;
+			if (x == sqx && y == sqy) return h;
+		}
+		//corner
+		y--;
+		h += hchange;
+		if (x == sqx && y == sqy) return h;
+		//left
+		length--;
+		for(int s = 0; s < length; s++)
+		{
+			x--;
+			h += hchange;
+			if (x == sqx && y == sqy) return h;
+		}
+		//corner
+		x--;
+		h += hchange;
+		if (x == sqx && y == sqy) return h;
+	}
+	return h;
+}
+
+
+float map( vec3 v ) 
+{
+	float sqs = (turns+1.0)*2.0;
+	float sqsizex = i_volume_size.x/sqs;
+	float sqsizey = i_volume_size.y/sqs;
+	
+	float sqx = floor(v.x/sqsizex);
+	float sqy = floor(v.y/sqsizey);
+	
+	//height change per sq step
+	float total = (sqs*sqs) - 4.0;
+	float hchange = i_volume_size.z / total;
+	
+	float h = getHeight(int(sqx), int(sqy), int(sqs), hchange);
+	
+	if (v.z > h) return 0.0;
+	
+	float cols = float(i_num_color_sels);
+
+	return color_sel( cols * random(v*.01,69.0) );
+}
+
+
+
+
