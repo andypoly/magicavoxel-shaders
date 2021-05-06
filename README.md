@@ -49,7 +49,9 @@ Isoweave
   
 Pattern thing!  
 
-Spiral Ramp
------------
+Spiral Ramp / Square
+--------------------
 
-Spiral ramp creating a tower-of-babel effect!
+Spiral ramp creating a tower-of-babel effect and a different squared-off version!
+
+
